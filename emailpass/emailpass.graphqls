@@ -1,0 +1,19 @@
+extend type Mutation {
+  register(email: String!, password: String!, name: String!): AuthResponse!
+  login(email: String!, password: String!): AuthResponse!
+}
+
+extend type Query {
+  me: Actor
+}
+
+type AuthResponse {
+  token: String!
+  actor: Actor!
+}
+
+type Actor {
+  id: ID!
+  type: String!
+  name: String!
+}
