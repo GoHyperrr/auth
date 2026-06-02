@@ -1,0 +1,25 @@
+extend type Mutation {
+  createAPIKey(name: String!, expiresAt: Time): GeneratedAPIKey!
+  revokeAPIKey(id: ID!): Boolean!
+}
+
+extend type Query {
+  listAPIKeys: [APIKeyInfo!]!
+}
+
+type GeneratedAPIKey {
+  id: ID!
+  name: String!
+  key: String!
+  actorId: ID!
+  expiresAt: Time
+  createdAt: Time!
+}
+
+type APIKeyInfo {
+  id: ID!
+  name: String!
+  actorId: ID!
+  expiresAt: Time
+  createdAt: Time!
+}

@@ -10,6 +10,7 @@ import (
 // APIKey represents a secret key used for authentication.
 type APIKey struct {
 	ID        string         `gorm:"primaryKey" json:"id"`
+	Name      string         `gorm:"default:'';not null" json:"name"`
 	Key       string         `gorm:"uniqueIndex;not null" json:"key"`
 	ActorID   string         `gorm:"not null" json:"actor_id"`
 	Actor     ident.Actor    `gorm:"foreignKey:ActorID" json:"actor"`

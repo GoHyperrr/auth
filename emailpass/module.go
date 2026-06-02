@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GoHyperrr/auth/token"
+	"github.com/GoHyperrr/auth/jwt"
 	"github.com/GoHyperrr/hyperrr/api/middleware"
 	"github.com/GoHyperrr/hyperrr/pkg/db"
 	"github.com/GoHyperrr/hyperrr/pkg/eventbus"
@@ -19,7 +19,7 @@ import (
 type Module struct {
 	database *db.DB
 	bus      eventbus.EventBus
-	store    *token.AuthStore
+	store    *jwt.AuthStore
 }
 
 func NewModule() *Module {
@@ -38,7 +38,7 @@ func (m *Module) Init(ctx context.Context, deps *registry.Dependencies) error {
 	if err != nil {
 		return fmt.Errorf("invalid JWT_EXPIRATION format: %w", err)
 	}
-	m.store = token.NewAuthStore(deps.DB, deps.Config.JWTSecret, exp)
+	m.store = jwt.NewAuthStore(deps.DB, deps.Config.JWTSecret, exp)
 
 	// Register Auth Middleware
 	registry.RegisterMiddleware("auth", func(next http.Handler) http.Handler {
@@ -52,15 +52,15 @@ func (m *Module) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (m *Module) Store() *token.AuthStore {
+func (m *Module) Store() *jwt.AuthStore {
 	return m.store
 }
 
 func (m *Module) Models() []any {
 	return []any{
 		&User{},
-		&token.RefreshToken{},
-		&token.Blacklist{},
+		&jwt.RefreshToken{},
+		&jwt.Blacklist{},
 	}
 }
 
