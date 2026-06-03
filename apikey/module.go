@@ -40,7 +40,19 @@ func (m *Module) Handlers() map[string]workflow.TaskHandler {
 }
 
 func init() {
-	registry.RegisterFactory("auth.apikey", func(options map[string]any) (registry.Module, error) {
+	factory := func(options map[string]any) (registry.Module, error) {
 		return NewModule(), nil
+	}
+	registry.RegisterFactory("auth.apikey", factory)
+	registry.RegisterFactory("github.com/GoHyperrr/auth/apikey", factory)
+
+	registry.RegisterCommand(registry.CLICommand{
+		Group:       "auth",
+		Name:        "apikey",
+		Usage:       "generate",
+		Short:       "Generate a new secure API key on-demand",
+		Long:        "Generate a new secure API key on-demand and write it to the database.",
+		NeedsDB:     true,
+		Run:         runAPIKeyCmd,
 	})
 }

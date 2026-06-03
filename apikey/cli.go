@@ -1,0 +1,72 @@
+package apikey
+
+import (
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
+	"time"
+
+	"github.com/GoHyperrr/hyperrr/pkg/registry"
+	ident "github.com/GoHyperrr/hyperrr/pkg/identity"
+	"github.com/google/uuid"
+)
+
+// runAPIKeyCmd executes the CLI logic to generate a new API key.
+func runAPIKeyCmd(deps *registry.Dependencies, args []string) error {
+	if len(args) < 1 || args[0] != "generate" {
+		fmt.Println("Usage: hyperrr apikey generate")
+		return fmt.Errorf("invalid arguments")
+	}
+
+	database := deps.DB
+	if database == nil {
+		return fmt.Errorf("database connection is not available in dependencies")
+	}
+
+	// Auto-migrate tables locally to make sure Actors and APIKeys exist
+	err := database.AutoMigrate(&ident.Actor{}, &APIKey{})
+	if err != nil {
+		return fmt.Errorf("failed to run migrations for apikey models: %w", err)
+	}
+
+	// Seed default MCP Developer Actor if not already present
+	var actorCount int64
+	database.Model(&ident.Actor{}).Where("id = ?", "act_mcp_developer").Count(&actorCount)
+	if actorCount == 0 {
+		devActor := ident.Actor{
+			ID:   "act_mcp_developer",
+			Type: ident.ActorAIAgent,
+			Name: "Developer Agent",
+		}
+		if err := database.Create(&devActor).Error; err != nil {
+			return fmt.Errorf("failed to create developer actor: %w", err)
+		}
+		fmt.Println("Created Developer Agent actor (act_mcp_developer).")
+	}
+
+	// Generate secure key
+	b := make([]byte, 24)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Errorf("failed to generate random bytes: %w", err)
+	}
+	keyVal := "hk_" + hex.EncodeToString(b)
+
+	newKey := APIKey{
+		ID:        "key_" + uuid.New().String(),
+		Name:      "Developer Key",
+		Key:       keyVal,
+		ActorID:   "act_mcp_developer",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	if err := database.Create(&newKey).Error; err != nil {
+		return fmt.Errorf("failed to save API key to database: %w", err)
+	}
+
+	fmt.Println("\n🔑 Secure API Key Generated successfully!")
+	fmt.Printf("Key:       %s\n", keyVal)
+	fmt.Printf("Actor ID:  %s\n", newKey.ActorID)
+	fmt.Println("\nKeep this key safe! You can use this key to authenticate with the MCP SSE gateway.")
+	return nil
+}

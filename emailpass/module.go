@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/GoHyperrr/auth/jwt"
@@ -17,13 +18,18 @@ import (
 )
 
 type Module struct {
-	database *db.DB
-	bus      eventbus.EventBus
-	store    *jwt.AuthStore
+	database   *db.DB
+	bus        eventbus.EventBus
+	store      *jwt.AuthStore
+	secret     string
+	expiration string
 }
 
-func NewModule() *Module {
-	return &Module{}
+func NewModule(secret, expiration string) *Module {
+	return &Module{
+		secret:     secret,
+		expiration: expiration,
+	}
 }
 
 func (m *Module) ID() string {
@@ -34,11 +40,11 @@ func (m *Module) Init(ctx context.Context, deps *registry.Dependencies) error {
 	m.database = deps.DB
 	m.bus = deps.EventBus
 
-	exp, err := time.ParseDuration(deps.Config.JWTExpiration)
+	exp, err := time.ParseDuration(m.expiration)
 	if err != nil {
 		return fmt.Errorf("invalid JWT_EXPIRATION format: %w", err)
 	}
-	m.store = jwt.NewAuthStore(deps.DB, deps.Config.JWTSecret, exp)
+	m.store = jwt.NewAuthStore(deps.DB, m.secret, exp)
 
 	// Register Auth Middleware
 	registry.RegisterMiddleware("auth", func(next http.Handler) http.Handler {
@@ -86,7 +92,36 @@ func (m *Module) emit(ctx context.Context, eventType string, payload any) {
 }
 
 func init() {
-	registry.RegisterFactory("auth.emailpass", func(options map[string]any) (registry.Module, error) {
-		return NewModule(), nil
+	factory := func(options map[string]any) (registry.Module, error) {
+		secret, _ := options["secret"].(string)
+		if secret == "" {
+			secret = os.Getenv("JWT_SECRET")
+		}
+		if secret == "" {
+			return nil, fmt.Errorf("auth.emailpass: JWT_SECRET is required (specify in module options or JWT_SECRET env var)")
+		}
+
+		expiration, _ := options["expiration"].(string)
+		if expiration == "" {
+			expiration = os.Getenv("JWT_EXPIRATION")
+		}
+		if expiration == "" {
+			expiration = "24h" // Default expiration
+		}
+
+		return NewModule(secret, expiration), nil
+	}
+
+	registry.RegisterFactory("auth.emailpass", factory)
+	registry.RegisterFactory("github.com/GoHyperrr/auth/emailpass", factory)
+
+	registry.RegisterCommand(registry.CLICommand{
+		Group:       "auth",
+		Name:        "user",
+		Usage:       "register <email> <password> <name>",
+		Short:       "Register a new user via email/password",
+		Long:        "Register a new user dynamically via email/password and write it to the database.",
+		NeedsDB:     true,
+		Run:         runEmailPassCmd,
 	})
 }
