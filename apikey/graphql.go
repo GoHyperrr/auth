@@ -5,13 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GoHyperrr/hyperrr/api/graph/model"
-	"github.com/GoHyperrr/hyperrr/api/middleware"
-	"github.com/GoHyperrr/hyperrr/pkg/registry"
+	"github.com/GoHyperrr/mdk"
 )
-
-// Ensure Module implements registry.GraphQLProvider at compile time.
-var _ registry.GraphQLProvider = (*Module)(nil)
 
 func (m *Module) Queries() map[string]any {
 	return map[string]any{
@@ -30,8 +25,8 @@ func (m *Module) FieldResolvers() map[string]any {
 	return nil
 }
 
-func (m *Module) CreateAPIKeyResolver(ctx context.Context, name string, expiresAt *time.Time) (*model.GeneratedAPIKey, error) {
-	actor, ok := middleware.ForContext(ctx)
+func (m *Module) CreateAPIKeyResolver(ctx context.Context, name string, expiresAt *time.Time) (*GeneratedAPIKey, error) {
+	actor, ok := mdk.ActorFromContext(ctx)
 	if !ok {
 		return nil, fmt.Errorf("unauthorized")
 	}
@@ -41,7 +36,7 @@ func (m *Module) CreateAPIKeyResolver(ctx context.Context, name string, expiresA
 		return nil, err
 	}
 
-	return &model.GeneratedAPIKey{
+	return &GeneratedAPIKey{
 		ID:        key.ID,
 		Name:      key.Name,
 		Key:       key.Key,
@@ -52,7 +47,7 @@ func (m *Module) CreateAPIKeyResolver(ctx context.Context, name string, expiresA
 }
 
 func (m *Module) RevokeAPIKeyResolver(ctx context.Context, id string) (bool, error) {
-	actor, ok := middleware.ForContext(ctx)
+	actor, ok := mdk.ActorFromContext(ctx)
 	if !ok {
 		return false, fmt.Errorf("unauthorized")
 	}
@@ -60,8 +55,8 @@ func (m *Module) RevokeAPIKeyResolver(ctx context.Context, id string) (bool, err
 	return m.RevokeAPIKey(ctx, actor.ID, id)
 }
 
-func (m *Module) ListAPIKeysResolver(ctx context.Context) ([]*model.APIKeyInfo, error) {
-	actor, ok := middleware.ForContext(ctx)
+func (m *Module) ListAPIKeysResolver(ctx context.Context) ([]*APIKeyInfo, error) {
+	actor, ok := mdk.ActorFromContext(ctx)
 	if !ok {
 		return nil, fmt.Errorf("unauthorized")
 	}
@@ -71,9 +66,9 @@ func (m *Module) ListAPIKeysResolver(ctx context.Context) ([]*model.APIKeyInfo, 
 		return nil, err
 	}
 
-	res := make([]*model.APIKeyInfo, len(keys))
+	res := make([]*APIKeyInfo, len(keys))
 	for i, key := range keys {
-		res[i] = &model.APIKeyInfo{
+		res[i] = &APIKeyInfo{
 			ID:        key.ID,
 			Name:      key.Name,
 			ActorID:   key.ActorID,
@@ -83,3 +78,5 @@ func (m *Module) ListAPIKeysResolver(ctx context.Context) ([]*model.APIKeyInfo, 
 	}
 	return res, nil
 }
+
+

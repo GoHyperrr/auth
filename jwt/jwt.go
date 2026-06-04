@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GoHyperrr/hyperrr/pkg/db"
-	"github.com/GoHyperrr/hyperrr/pkg/identity"
+	"github.com/GoHyperrr/mdk"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -32,8 +31,8 @@ type Blacklist struct {
 
 // Claims represents the JWT actor payload claims.
 type Claims struct {
-	ActorID   string             `json:"actor_id"`
-	ActorType identity.ActorType `json:"actor_type"`
+	ActorID   string        `json:"actor_id"`
+	ActorType mdk.ActorType `json:"actor_type"`
 	jwt.RegisteredClaims
 }
 
@@ -43,12 +42,12 @@ var (
 
 // AuthStore handles persistence for authentication tokens.
 type AuthStore struct {
-	db            *db.DB
+	db            *gorm.DB
 	signingKey    []byte
 	jwtExpiration time.Duration
 }
 
-func NewAuthStore(database *db.DB, signingKey string, expiration time.Duration) *AuthStore {
+func NewAuthStore(database *gorm.DB, signingKey string, expiration time.Duration) *AuthStore {
 	return &AuthStore{
 		db:            database,
 		signingKey:    []byte(signingKey),
@@ -103,7 +102,7 @@ func (s *AuthStore) DeleteExpiredTokens(ctx context.Context, now time.Time) erro
 }
 
 // GenerateToken creates a new JWT for an actor.
-func (s *AuthStore) GenerateToken(actor identity.Actor) (string, error) {
+func (s *AuthStore) GenerateToken(actor mdk.Actor) (string, error) {
 	jti := uuid.New().String()
 	claims := Claims{
 		ActorID:   actor.ID,
@@ -120,7 +119,7 @@ func (s *AuthStore) GenerateToken(actor identity.Actor) (string, error) {
 }
 
 // ValidateToken parses and validates a JWT string.
-func (s *AuthStore) ValidateToken(ctx context.Context, tokenString string) (*identity.Actor, error) {
+func (s *AuthStore) ValidateToken(ctx context.Context, tokenString string) (*mdk.Actor, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -142,7 +141,7 @@ func (s *AuthStore) ValidateToken(ctx context.Context, tokenString string) (*ide
 			return nil, errors.New("token is revoked")
 		}
 
-		return &identity.Actor{
+		return &mdk.Actor{
 			ID:   claims.ActorID,
 			Type: claims.ActorType,
 		}, nil
@@ -150,3 +149,4 @@ func (s *AuthStore) ValidateToken(ctx context.Context, tokenString string) (*ide
 
 	return nil, ErrInvalidToken
 }
+

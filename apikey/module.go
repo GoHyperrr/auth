@@ -3,13 +3,12 @@ package apikey
 import (
 	"context"
 
-	"github.com/GoHyperrr/hyperrr/pkg/db"
-	"github.com/GoHyperrr/hyperrr/pkg/registry"
-	"github.com/GoHyperrr/hyperrr/pkg/workflow"
+	"github.com/GoHyperrr/mdk"
+	"gorm.io/gorm"
 )
 
 type Module struct {
-	database *db.DB
+	database *gorm.DB
 }
 
 func NewModule() *Module {
@@ -20,8 +19,8 @@ func (m *Module) ID() string {
 	return "auth.apikey"
 }
 
-func (m *Module) Init(ctx context.Context, deps *registry.Dependencies) error {
-	m.database = deps.DB
+func (m *Module) Init(ctx context.Context, rt mdk.Runtime) error {
+	m.database = rt.DB()
 	return nil
 }
 
@@ -35,18 +34,16 @@ func (m *Module) Models() []any {
 	}
 }
 
-func (m *Module) Handlers() map[string]workflow.TaskHandler {
+func (m *Module) Routes() []mdk.Route {
 	return nil
 }
 
 func init() {
-	factory := func(options map[string]any) (registry.Module, error) {
-		return NewModule(), nil
-	}
-	registry.RegisterFactory("auth.apikey", factory)
-	registry.RegisterFactory("github.com/GoHyperrr/auth/apikey", factory)
+	mdk.Register(func() mdk.Module {
+		return NewModule()
+	})
 
-	registry.RegisterCommand(registry.CLICommand{
+	mdk.RegisterCommand(mdk.CLICommand{
 		Group:       "auth",
 		Name:        "apikey",
 		Usage:       "generate",
@@ -56,3 +53,4 @@ func init() {
 		Run:         runAPIKeyCmd,
 	})
 }
+

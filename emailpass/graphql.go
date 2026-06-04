@@ -4,13 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GoHyperrr/hyperrr/api/graph/model"
-	"github.com/GoHyperrr/hyperrr/api/middleware"
-	"github.com/GoHyperrr/hyperrr/pkg/registry"
+	"github.com/GoHyperrr/mdk"
 )
-
-// Ensure Module implements registry.GraphQLProvider at compile time.
-var _ registry.GraphQLProvider = (*Module)(nil)
 
 func (m *Module) Queries() map[string]any {
 	return map[string]any{
@@ -29,7 +24,7 @@ func (m *Module) FieldResolvers() map[string]any {
 	return nil
 }
 
-func (m *Module) RegisterResolver(ctx context.Context, email string, password string, name string) (*model.AuthResponse, error) {
+func (m *Module) RegisterResolver(ctx context.Context, email string, password string, name string) (*AuthResponse, error) {
 	actor, err := m.Register(ctx, email, password, name)
 	if err != nil {
 		return nil, err
@@ -40,17 +35,13 @@ func (m *Module) RegisterResolver(ctx context.Context, email string, password st
 		return nil, fmt.Errorf("failed to generate token: %w", err)
 	}
 
-	return &model.AuthResponse{
+	return &AuthResponse{
 		Token: token,
-		Actor: &model.Actor{
-			ID:   actor.ID,
-			Type: string(actor.Type),
-			Name: actor.Name,
-		},
+		Actor: actor,
 	}, nil
 }
 
-func (m *Module) LoginResolver(ctx context.Context, email string, password string) (*model.AuthResponse, error) {
+func (m *Module) LoginResolver(ctx context.Context, email string, password string) (*AuthResponse, error) {
 	actor, err := m.Login(ctx, email, password)
 	if err != nil {
 		return nil, err
@@ -61,25 +52,18 @@ func (m *Module) LoginResolver(ctx context.Context, email string, password strin
 		return nil, fmt.Errorf("failed to generate token: %w", err)
 	}
 
-	return &model.AuthResponse{
+	return &AuthResponse{
 		Token: token,
-		Actor: &model.Actor{
-			ID:   actor.ID,
-			Type: string(actor.Type),
-			Name: actor.Name,
-		},
+		Actor: actor,
 	}, nil
 }
 
-func (m *Module) Me(ctx context.Context) (*model.Actor, error) {
-	actor, ok := middleware.ForContext(ctx)
+func (m *Module) Me(ctx context.Context) (*mdk.Actor, error) {
+	actor, ok := mdk.ActorFromContext(ctx)
 	if !ok {
 		return nil, fmt.Errorf("unauthorized")
 	}
 
-	return &model.Actor{
-		ID:   actor.ID,
-		Type: string(actor.Type),
-		Name: actor.Name,
-	}, nil
+	return actor, nil
 }
+

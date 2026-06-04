@@ -4,15 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GoHyperrr/hyperrr/pkg/db"
-	ident "github.com/GoHyperrr/hyperrr/pkg/identity"
-	"github.com/GoHyperrr/hyperrr/pkg/registry"
+	"github.com/GoHyperrr/mdk"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 // runEmailPassCmd registers a new user via CLI.
-func runEmailPassCmd(deps *registry.Dependencies, args []string) error {
+func runEmailPassCmd(rt mdk.Runtime, args []string) error {
 	if len(args) < 4 || args[0] != "register" {
 		fmt.Println("Usage: hyperrr emailpass register <email> <password> <name>")
 		return fmt.Errorf("invalid arguments")
@@ -22,13 +21,13 @@ func runEmailPassCmd(deps *registry.Dependencies, args []string) error {
 	password := args[2]
 	name := strings.Join(args[3:], " ")
 
-	database := deps.DB
+	database := rt.DB()
 	if database == nil {
 		return fmt.Errorf("database connection is not available in dependencies")
 	}
 
 	// Auto-migrate tables locally to ensure Actor and User exist
-	err := database.AutoMigrate(&ident.Actor{}, &User{})
+	err := database.AutoMigrate(&mdk.Actor{}, &User{})
 	if err != nil {
 		return fmt.Errorf("failed to run migrations for emailpass models: %w", err)
 	}
@@ -46,9 +45,9 @@ func runEmailPassCmd(deps *registry.Dependencies, args []string) error {
 	}
 
 	actorID := "act_" + uuid.New().String()
-	actor := ident.Actor{
+	actor := mdk.Actor{
 		ID:   actorID,
-		Type: ident.ActorHuman,
+		Type: mdk.ActorHuman,
 		Name: name,
 	}
 
@@ -59,7 +58,7 @@ func runEmailPassCmd(deps *registry.Dependencies, args []string) error {
 		ActorID:      actorID,
 	}
 
-	err = database.Transaction(func(tx *db.DB) error {
+	err = database.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&actor).Error; err != nil {
 			return err
 		}
@@ -78,3 +77,4 @@ func runEmailPassCmd(deps *registry.Dependencies, args []string) error {
 	fmt.Printf("Actor ID:  %s\n", actorID)
 	return nil
 }
+

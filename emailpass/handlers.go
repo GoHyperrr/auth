@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GoHyperrr/hyperrr/pkg/db"
-	ident "github.com/GoHyperrr/hyperrr/pkg/identity"
+	"github.com/GoHyperrr/mdk"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 // ValidateActor is a workflow handler that verifies an actor exists and is active.
@@ -27,7 +27,7 @@ func (m *Module) ValidateActor(ctx context.Context, input any) (any, error) {
 		return nil, fmt.Errorf("actor_id is required")
 	}
 
-	var actor ident.Actor
+	var actor mdk.Actor
 	if err := m.database.First(&actor, "id = ?", actorID).Error; err != nil {
 		return nil, fmt.Errorf("actor not found: %w", err)
 	}
@@ -40,7 +40,7 @@ func (m *Module) ValidateActor(ctx context.Context, input any) (any, error) {
 }
 
 // Register creates a new user and actor.
-func (m *Module) Register(ctx context.Context, email, password, name string) (*ident.Actor, error) {
+func (m *Module) Register(ctx context.Context, email, password, name string) (*mdk.Actor, error) {
 	if email == "" || password == "" || name == "" {
 		return nil, fmt.Errorf("email, password, and name are required")
 	}
@@ -50,9 +50,9 @@ func (m *Module) Register(ctx context.Context, email, password, name string) (*i
 	}
 
 	actorID := "act_" + uuid.New().String()
-	actor := ident.Actor{
+	actor := mdk.Actor{
 		ID:   actorID,
-		Type: ident.ActorHuman,
+		Type: mdk.ActorHuman,
 		Name: name,
 	}
 
@@ -63,7 +63,7 @@ func (m *Module) Register(ctx context.Context, email, password, name string) (*i
 		ActorID:      actorID,
 	}
 
-	err = m.database.Transaction(func(tx *db.DB) error {
+	err = m.database.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&actor).Error; err != nil {
 			return err
 		}
@@ -89,7 +89,7 @@ func (m *Module) Register(ctx context.Context, email, password, name string) (*i
 }
 
 // Login verifies credentials and returns the actor.
-func (m *Module) Login(ctx context.Context, email, password string) (*ident.Actor, error) {
+func (m *Module) Login(ctx context.Context, email, password string) (*mdk.Actor, error) {
 	var user User
 	if err := m.database.Preload("Actor").First(&user, "email = ?", email).Error; err != nil {
 		return nil, fmt.Errorf("invalid credentials")
@@ -101,3 +101,4 @@ func (m *Module) Login(ctx context.Context, email, password string) (*ident.Acto
 
 	return &user.Actor, nil
 }
+

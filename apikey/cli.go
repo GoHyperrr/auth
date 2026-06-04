@@ -6,36 +6,35 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GoHyperrr/hyperrr/pkg/registry"
-	ident "github.com/GoHyperrr/hyperrr/pkg/identity"
+	"github.com/GoHyperrr/mdk"
 	"github.com/google/uuid"
 )
 
 // runAPIKeyCmd executes the CLI logic to generate a new API key.
-func runAPIKeyCmd(deps *registry.Dependencies, args []string) error {
+func runAPIKeyCmd(rt mdk.Runtime, args []string) error {
 	if len(args) < 1 || args[0] != "generate" {
 		fmt.Println("Usage: hyperrr apikey generate")
 		return fmt.Errorf("invalid arguments")
 	}
 
-	database := deps.DB
+	database := rt.DB()
 	if database == nil {
 		return fmt.Errorf("database connection is not available in dependencies")
 	}
 
 	// Auto-migrate tables locally to make sure Actors and APIKeys exist
-	err := database.AutoMigrate(&ident.Actor{}, &APIKey{})
+	err := database.AutoMigrate(&mdk.Actor{}, &APIKey{})
 	if err != nil {
 		return fmt.Errorf("failed to run migrations for apikey models: %w", err)
 	}
 
 	// Seed default MCP Developer Actor if not already present
 	var actorCount int64
-	database.Model(&ident.Actor{}).Where("id = ?", "act_mcp_developer").Count(&actorCount)
+	database.Model(&mdk.Actor{}).Where("id = ?", "act_mcp_developer").Count(&actorCount)
 	if actorCount == 0 {
-		devActor := ident.Actor{
+		devActor := mdk.Actor{
 			ID:   "act_mcp_developer",
-			Type: ident.ActorAIAgent,
+			Type: mdk.ActorAIAgent,
 			Name: "Developer Agent",
 		}
 		if err := database.Create(&devActor).Error; err != nil {
@@ -70,3 +69,4 @@ func runAPIKeyCmd(deps *registry.Dependencies, args []string) error {
 	fmt.Println("\nKeep this key safe! You can use this key to authenticate with the MCP SSE gateway.")
 	return nil
 }
+
