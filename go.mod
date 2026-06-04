@@ -8,3 +8,5 @@ require (
 	golang.org/x/crypto v0.51.0
 	gorm.io/gorm v1.31.1
 )
+
+replace github.com/GoHyperrr/mdk => ../mdk
