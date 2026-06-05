@@ -144,15 +144,5 @@ func init() {
 	mdk.Register(func() mdk.Module {
 		return NewModule("", "")
 	})
-
-	mdk.RegisterCommand(mdk.CLICommand{
-		Group:   "auth",
-		Name:    "user",
-		Usage:   "register <email> <password> <name>",
-		Short:   "Register a new user via email/password",
-		Long:    "Register a new user dynamically via email/password and write it to the database.",
-		NeedsDB: true,
-		Run:     runEmailPassCmd,
-	})
 }
 

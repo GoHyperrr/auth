@@ -42,15 +42,5 @@ func init() {
 	mdk.Register(func() mdk.Module {
 		return NewModule()
 	})
-
-	mdk.RegisterCommand(mdk.CLICommand{
-		Group:       "auth",
-		Name:        "apikey",
-		Usage:       "generate",
-		Short:       "Generate a new secure API key on-demand",
-		Long:        "Generate a new secure API key on-demand and write it to the database.",
-		NeedsDB:     true,
-		Run:         runAPIKeyCmd,
-	})
 }
 

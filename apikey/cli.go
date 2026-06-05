@@ -10,8 +10,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// runAPIKeyCmd executes the CLI logic to generate a new API key.
-func runAPIKeyCmd(rt mdk.Runtime, args []string) error {
+// RunAPIKeyCmd executes the CLI logic to generate a new API key.
+func RunAPIKeyCmd(rt mdk.Runtime, args []string) error {
 	if len(args) < 1 || args[0] != "generate" {
 		fmt.Println("Usage: hyperrr apikey generate")
 		return fmt.Errorf("invalid arguments")

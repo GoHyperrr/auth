@@ -10,8 +10,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// runEmailPassCmd registers a new user via CLI.
-func runEmailPassCmd(rt mdk.Runtime, args []string) error {
+// RunEmailPassCmd registers a new user via CLI.
+func RunEmailPassCmd(rt mdk.Runtime, args []string) error {
 	if len(args) < 4 || args[0] != "register" {
 		fmt.Println("Usage: hyperrr emailpass register <email> <password> <name>")
 		return fmt.Errorf("invalid arguments")
