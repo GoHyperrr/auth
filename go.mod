@@ -15,3 +15,5 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	golang.org/x/text v0.37.0 // indirect
 )
+
+replace github.com/GoHyperrr/mdk => ../mdk

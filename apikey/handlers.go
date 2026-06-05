@@ -12,7 +12,7 @@ import (
 )
 
 // GetActorByAPIKey retrieves an actor associated with a given API key.
-func (m *Module) GetActorByAPIKey(ctx context.Context, key string) (*mdk.Actor, error) {
+func (m *Module) GetActorByAPIKey(ctx context.Context, key string) (mdk.Actor, error) {
 	var apiKey APIKey
 	err := m.database.WithContext(ctx).Preload("Actor").First(&apiKey, "key = ?", key).Error
 	if err != nil {

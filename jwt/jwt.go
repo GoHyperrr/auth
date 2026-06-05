@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/GoHyperrr/auth"
 	"github.com/GoHyperrr/mdk"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -105,8 +106,8 @@ func (s *AuthStore) DeleteExpiredTokens(ctx context.Context, now time.Time) erro
 func (s *AuthStore) GenerateToken(actor mdk.Actor) (string, error) {
 	jti := uuid.New().String()
 	claims := Claims{
-		ActorID:   actor.ID,
-		ActorType: actor.Type,
+		ActorID:   actor.GetID(),
+		ActorType: actor.GetType(),
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        jti,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.jwtExpiration)),
@@ -119,7 +120,7 @@ func (s *AuthStore) GenerateToken(actor mdk.Actor) (string, error) {
 }
 
 // ValidateToken parses and validates a JWT string.
-func (s *AuthStore) ValidateToken(ctx context.Context, tokenString string) (*mdk.Actor, error) {
+func (s *AuthStore) ValidateToken(ctx context.Context, tokenString string) (mdk.Actor, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -141,7 +142,7 @@ func (s *AuthStore) ValidateToken(ctx context.Context, tokenString string) (*mdk
 			return nil, errors.New("token is revoked")
 		}
 
-		return &mdk.Actor{
+		return &auth.Actor{
 			ID:   claims.ActorID,
 			Type: claims.ActorType,
 		}, nil

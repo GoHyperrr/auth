@@ -94,7 +94,7 @@ func (m *Module) Routes() []mdk.Route {
 }
 
 // ValidateToken implements mdk.TokenValidator interface.
-func (m *Module) ValidateToken(ctx context.Context, token string) (*mdk.Actor, error) {
+func (m *Module) ValidateToken(ctx context.Context, token string) (mdk.Actor, error) {
 	return m.store.ValidateToken(ctx, token)
 }
 

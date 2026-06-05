@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/GoHyperrr/auth"
 	"github.com/GoHyperrr/mdk"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -27,7 +28,7 @@ func RunEmailPassCmd(rt mdk.Runtime, args []string) error {
 	}
 
 	// Auto-migrate tables locally to ensure Actor and User exist
-	err := database.AutoMigrate(&mdk.Actor{}, &User{})
+	err := database.AutoMigrate(&auth.Actor{}, &User{})
 	if err != nil {
 		return fmt.Errorf("failed to run migrations for emailpass models: %w", err)
 	}
@@ -45,7 +46,7 @@ func RunEmailPassCmd(rt mdk.Runtime, args []string) error {
 	}
 
 	actorID := "act_" + uuid.New().String()
-	actor := mdk.Actor{
+	actor := auth.Actor{
 		ID:   actorID,
 		Type: mdk.ActorHuman,
 		Name: name,

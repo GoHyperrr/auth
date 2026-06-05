@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/GoHyperrr/auth"
 	"github.com/GoHyperrr/mdk"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -27,20 +28,20 @@ func (m *Module) ValidateActor(ctx context.Context, input any) (any, error) {
 		return nil, fmt.Errorf("actor_id is required")
 	}
 
-	var actor mdk.Actor
+	var actor auth.Actor
 	if err := m.database.First(&actor, "id = ?", actorID).Error; err != nil {
 		return nil, fmt.Errorf("actor not found: %w", err)
 	}
 
 	return map[string]any{
-		"id":   actor.ID,
-		"type": actor.Type,
-		"name": actor.Name,
+		"id":   actor.GetID(),
+		"type": actor.GetType(),
+		"name": actor.GetName(),
 	}, nil
 }
 
 // Register creates a new user and actor.
-func (m *Module) Register(ctx context.Context, email, password, name string) (*mdk.Actor, error) {
+func (m *Module) Register(ctx context.Context, email, password, name string) (mdk.Actor, error) {
 	if email == "" || password == "" || name == "" {
 		return nil, fmt.Errorf("email, password, and name are required")
 	}
@@ -50,7 +51,7 @@ func (m *Module) Register(ctx context.Context, email, password, name string) (*m
 	}
 
 	actorID := "act_" + uuid.New().String()
-	actor := mdk.Actor{
+	actor := auth.Actor{
 		ID:   actorID,
 		Type: mdk.ActorHuman,
 		Name: name,
@@ -89,7 +90,7 @@ func (m *Module) Register(ctx context.Context, email, password, name string) (*m
 }
 
 // Login verifies credentials and returns the actor.
-func (m *Module) Login(ctx context.Context, email, password string) (*mdk.Actor, error) {
+func (m *Module) Login(ctx context.Context, email, password string) (mdk.Actor, error) {
 	var user User
 	if err := m.database.Preload("Actor").First(&user, "email = ?", email).Error; err != nil {
 		return nil, fmt.Errorf("invalid credentials")

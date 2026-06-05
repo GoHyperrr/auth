@@ -31,7 +31,7 @@ func (m *Module) CreateAPIKeyResolver(ctx context.Context, name string, expiresA
 		return nil, fmt.Errorf("unauthorized")
 	}
 
-	key, err := m.CreateAPIKey(ctx, actor.ID, name, expiresAt)
+	key, err := m.CreateAPIKey(ctx, actor.GetID(), name, expiresAt)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (m *Module) RevokeAPIKeyResolver(ctx context.Context, id string) (bool, err
 		return false, fmt.Errorf("unauthorized")
 	}
 
-	return m.RevokeAPIKey(ctx, actor.ID, id)
+	return m.RevokeAPIKey(ctx, actor.GetID(), id)
 }
 
 func (m *Module) ListAPIKeysResolver(ctx context.Context) ([]*APIKeyInfo, error) {
@@ -61,7 +61,7 @@ func (m *Module) ListAPIKeysResolver(ctx context.Context) ([]*APIKeyInfo, error)
 		return nil, fmt.Errorf("unauthorized")
 	}
 
-	keys, err := m.ListAPIKeys(ctx, actor.ID)
+	keys, err := m.ListAPIKeys(ctx, actor.GetID())
 	if err != nil {
 		return nil, err
 	}
