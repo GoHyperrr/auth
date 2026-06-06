@@ -94,7 +94,7 @@ func (m *Module) Routes() []mdk.Route {
 }
 
 // ValidateToken implements mdk.TokenValidator interface.
-func (m *Module) ValidateToken(ctx context.Context, token string) (*mdk.Actor, error) {
+func (m *Module) ValidateToken(ctx context.Context, token string) (mdk.Actor, error) {
 	return m.store.ValidateToken(ctx, token)
 }
 
@@ -143,16 +143,6 @@ func (m *Module) emit(ctx context.Context, eventType string, payload any) {
 func init() {
 	mdk.Register(func() mdk.Module {
 		return NewModule("", "")
-	})
-
-	mdk.RegisterCommand(mdk.CLICommand{
-		Group:   "auth",
-		Name:    "user",
-		Usage:   "register <email> <password> <name>",
-		Short:   "Register a new user via email/password",
-		Long:    "Register a new user dynamically via email/password and write it to the database.",
-		NeedsDB: true,
-		Run:     runEmailPassCmd,
 	})
 }
 

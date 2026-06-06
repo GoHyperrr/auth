@@ -3,7 +3,7 @@ package apikey
 import (
 	"time"
 
-	"github.com/GoHyperrr/mdk"
+	"github.com/GoHyperrr/auth"
 	"gorm.io/gorm"
 )
 
@@ -13,7 +13,7 @@ type APIKey struct {
 	Name      string         `gorm:"default:'';not null" json:"name"`
 	Key       string         `gorm:"uniqueIndex;not null" json:"key"`
 	ActorID   string         `gorm:"not null" json:"actor_id"`
-	Actor     mdk.Actor      `gorm:"foreignKey:ActorID" json:"actor"`
+	Actor     auth.Actor     `gorm:"foreignKey:ActorID" json:"actor"`
 	ExpiresAt *time.Time     `json:"expires_at,omitempty"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`

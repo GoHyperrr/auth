@@ -30,7 +30,7 @@ func (m *Module) RegisterResolver(ctx context.Context, email string, password st
 		return nil, err
 	}
 
-	token, err := m.store.GenerateToken(*actor)
+	token, err := m.store.GenerateToken(actor)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate token: %w", err)
 	}
@@ -47,7 +47,7 @@ func (m *Module) LoginResolver(ctx context.Context, email string, password strin
 		return nil, err
 	}
 
-	token, err := m.store.GenerateToken(*actor)
+	token, err := m.store.GenerateToken(actor)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate token: %w", err)
 	}
@@ -58,7 +58,7 @@ func (m *Module) LoginResolver(ctx context.Context, email string, password strin
 	}, nil
 }
 
-func (m *Module) Me(ctx context.Context) (*mdk.Actor, error) {
+func (m *Module) Me(ctx context.Context) (mdk.Actor, error) {
 	actor, ok := mdk.ActorFromContext(ctx)
 	if !ok {
 		return nil, fmt.Errorf("unauthorized")

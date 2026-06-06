@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/GoHyperrr/auth"
 	"github.com/GoHyperrr/mdk"
 	"github.com/google/uuid"
 )
 
-// runAPIKeyCmd executes the CLI logic to generate a new API key.
-func runAPIKeyCmd(rt mdk.Runtime, args []string) error {
+// RunAPIKeyCmd executes the CLI logic to generate a new API key.
+func RunAPIKeyCmd(rt mdk.Runtime, args []string) error {
 	if len(args) < 1 || args[0] != "generate" {
 		fmt.Println("Usage: hyperrr apikey generate")
 		return fmt.Errorf("invalid arguments")
@@ -23,16 +24,16 @@ func runAPIKeyCmd(rt mdk.Runtime, args []string) error {
 	}
 
 	// Auto-migrate tables locally to make sure Actors and APIKeys exist
-	err := database.AutoMigrate(&mdk.Actor{}, &APIKey{})
+	err := database.AutoMigrate(&auth.Actor{}, &APIKey{})
 	if err != nil {
 		return fmt.Errorf("failed to run migrations for apikey models: %w", err)
 	}
 
 	// Seed default MCP Developer Actor if not already present
 	var actorCount int64
-	database.Model(&mdk.Actor{}).Where("id = ?", "act_mcp_developer").Count(&actorCount)
+	database.Model(&auth.Actor{}).Where("id = ?", "act_mcp_developer").Count(&actorCount)
 	if actorCount == 0 {
-		devActor := mdk.Actor{
+		devActor := auth.Actor{
 			ID:   "act_mcp_developer",
 			Type: mdk.ActorAIAgent,
 			Name: "Developer Agent",
