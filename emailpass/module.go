@@ -3,11 +3,13 @@ package emailpass
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/GoHyperrr/auth"
 	"github.com/GoHyperrr/auth/jwt"
 	"github.com/GoHyperrr/mdk"
 	"github.com/google/uuid"
@@ -15,12 +17,13 @@ import (
 )
 
 type Module struct {
-	database   *gorm.DB
-	bus        mdk.EventBus
-	store      *jwt.AuthStore
-	secret     string
-	expiration string
-	rt         mdk.Runtime
+	database    *gorm.DB
+	bus         mdk.EventBus
+	store       *jwt.AuthStore
+	secret      string
+	expiration  string
+	rt          mdk.Runtime
+	stopPruning chan struct{}
 }
 
 func NewModule(secret, expiration string) *Module {
@@ -49,6 +52,19 @@ func (m *Module) Init(ctx context.Context, rt mdk.Runtime) error {
 		return fmt.Errorf("auth.emailpass: JWT_SECRET is required (specify in config or JWT_SECRET env var)")
 	}
 
+	appEnv, _ := rt.Config("app_env").(string)
+	if appEnv == "" {
+		appEnv = os.Getenv("APP_ENV")
+	}
+	isTest := appEnv == "test"
+	if appEnv == "" {
+		isTest = flag.Lookup("test.v") != nil
+	}
+
+	if !isTest && len(m.secret) < 32 {
+		return fmt.Errorf("auth.emailpass: JWT_SECRET must be at least 32 characters long")
+	}
+
 	if e, ok := rt.Config("auth.emailpass.expiration").(string); ok && e != "" {
 		m.expiration = e
 	} else if envExp := os.Getenv("JWT_EXPIRATION"); envExp != "" {
@@ -64,6 +80,31 @@ func (m *Module) Init(ctx context.Context, rt mdk.Runtime) error {
 	}
 	m.store = jwt.NewAuthStore(rt.DB(), m.secret, exp)
 
+	m.stopPruning = make(chan struct{})
+
+	// Run an initial prune asynchronously
+	go func() {
+		pruneCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		m.pruneExpiredTokens(pruneCtx)
+	}()
+
+	// Start hourly pruning ticker
+	go func() {
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				pruneCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				m.pruneExpiredTokens(pruneCtx)
+				cancel()
+			case <-m.stopPruning:
+				return
+			}
+		}
+	}()
+
 	if rt.Workflows() != nil {
 		if err := rt.Workflows().RegisterHandler("auth.validate_actor", m.ValidateActorStep); err != nil {
 			return fmt.Errorf("failed to register validate actor step handler: %w", err)
@@ -73,7 +114,22 @@ func (m *Module) Init(ctx context.Context, rt mdk.Runtime) error {
 	return nil
 }
 
+func (m *Module) pruneExpiredTokens(ctx context.Context) {
+	if m.store == nil {
+		return
+	}
+	if err := m.store.DeleteExpiredTokens(ctx, time.Now()); err != nil {
+		if m.rt != nil && m.rt.Logger() != nil {
+			m.rt.Logger().Error("auth.emailpass: failed to prune expired tokens", "error", err)
+		}
+	}
+}
+
 func (m *Module) Shutdown(ctx context.Context) error {
+	if m.stopPruning != nil {
+		close(m.stopPruning)
+		m.stopPruning = nil
+	}
 	return nil
 }
 
@@ -83,6 +139,7 @@ func (m *Module) Store() *jwt.AuthStore {
 
 func (m *Module) Models() []any {
 	return []any{
+		&auth.Actor{},
 		&User{},
 		&jwt.RefreshToken{},
 		&jwt.Blacklist{},
@@ -145,4 +202,3 @@ func init() {
 		return NewModule("", "")
 	})
 }
-

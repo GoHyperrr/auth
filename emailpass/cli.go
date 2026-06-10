@@ -27,12 +27,6 @@ func RunEmailPassCmd(rt mdk.Runtime, args []string) error {
 		return fmt.Errorf("database connection is not available in dependencies")
 	}
 
-	// Auto-migrate tables locally to ensure Actor and User exist
-	err := database.AutoMigrate(&auth.Actor{}, &User{})
-	if err != nil {
-		return fmt.Errorf("failed to run migrations for emailpass models: %w", err)
-	}
-
 	// Check if user already exists
 	var count int64
 	database.Model(&User{}).Where("email = ?", email).Count(&count)

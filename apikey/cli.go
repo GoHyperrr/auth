@@ -23,12 +23,6 @@ func RunAPIKeyCmd(rt mdk.Runtime, args []string) error {
 		return fmt.Errorf("database connection is not available in dependencies")
 	}
 
-	// Auto-migrate tables locally to make sure Actors and APIKeys exist
-	err := database.AutoMigrate(&auth.Actor{}, &APIKey{})
-	if err != nil {
-		return fmt.Errorf("failed to run migrations for apikey models: %w", err)
-	}
-
 	// Seed default MCP Developer Actor if not already present
 	var actorCount int64
 	database.Model(&auth.Actor{}).Where("id = ?", "act_mcp_developer").Count(&actorCount)

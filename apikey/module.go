@@ -3,9 +3,11 @@ package apikey
 import (
 	"context"
 
+	"github.com/GoHyperrr/auth"
 	"github.com/GoHyperrr/mdk"
 	"gorm.io/gorm"
 )
+
 
 type Module struct {
 	database *gorm.DB
@@ -30,6 +32,7 @@ func (m *Module) Shutdown(ctx context.Context) error {
 
 func (m *Module) Models() []any {
 	return []any{
+		&auth.Actor{},
 		&APIKey{},
 	}
 }

@@ -99,7 +99,11 @@ func (s *AuthStore) RevokeRefreshToken(ctx context.Context, token string) error 
 }
 
 func (s *AuthStore) DeleteExpiredTokens(ctx context.Context, now time.Time) error {
-	return s.db.WithContext(ctx).Where("expires_at < ? OR revoked_at IS NOT NULL", now).Delete(&RefreshToken{}).Error
+	err := s.db.WithContext(ctx).Where("expires_at < ? OR revoked_at IS NOT NULL", now).Delete(&RefreshToken{}).Error
+	if err != nil {
+		return err
+	}
+	return s.db.WithContext(ctx).Where("expires_at < ?", now).Delete(&Blacklist{}).Error
 }
 
 // GenerateToken creates a new JWT for an actor.

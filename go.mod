@@ -1,6 +1,6 @@
 module github.com/GoHyperrr/auth
 
-go 1.25.5
+go 1.25
 
 require (
 	github.com/GoHyperrr/mdk v0.3.0
