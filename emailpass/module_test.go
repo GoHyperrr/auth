@@ -8,18 +8,16 @@ import (
 	"github.com/GoHyperrr/auth"
 	"github.com/GoHyperrr/auth/jwt"
 	"github.com/GoHyperrr/mdk/mdktest"
-	"github.com/glebarez/sqlite"
-	"gorm.io/gorm"
 )
 
 func TestEmailPassModule(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	rt, err := mdktest.NewInMemoryTestRuntime()
 	if err != nil {
-		t.Fatalf("failed to connect to memory database: %v", err)
+		t.Fatalf("failed to setup test runtime: %v", err)
 	}
+	db := rt.DB()
 
 	mod := NewModule("this_is_a_secret_that_is_32_characters_long", "1h")
-	rt := mdktest.NewTestRuntime(db)
 	rt.SetConfig("auth.emailpass.secret", "this_is_a_secret_that_is_32_characters_long")
 	rt.SetConfig("auth.emailpass.expiration", "1h")
 
