@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -148,6 +149,49 @@ func (m *Module) Models() []any {
 
 func (m *Module) Routes() []mdk.Route {
 	return nil
+}
+
+// Middlewares implements mdk.MiddlewareProvider interface.
+func (m *Module) Middlewares() []func(http.Handler) http.Handler {
+	return []func(http.Handler) http.Handler{
+		m.JWTMiddleware,
+	}
+}
+
+func (m *Module) JWTMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// If already authenticated by another middleware, skip.
+		if _, ok := mdk.ActorFromContext(r.Context()); ok {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		header := r.Header.Get("Authorization")
+		if header == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		parts := strings.Split(header, " ")
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			http.Error(w, "Unauthorized: Malformed Authorization header (expected 'Bearer <token>')", http.StatusUnauthorized)
+			return
+		}
+
+		if m.store == nil {
+			http.Error(w, "Unauthorized: JWT token validator not configured", http.StatusUnauthorized)
+			return
+		}
+
+		resActor, err := m.store.ValidateToken(r.Context(), parts[1])
+		if err != nil {
+			http.Error(w, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		ctx := mdk.WithActor(r.Context(), resActor)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 // ValidateToken implements mdk.TokenValidator interface.
